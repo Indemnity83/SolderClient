@@ -12,6 +12,7 @@
 namespace TechnicPack\Solder;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
 use TechnicPack\Solder\Resources\Build;
 use TechnicPack\Solder\Resources\Modpack;
 use GuzzleHttp\Exception\RequestException;
@@ -25,6 +26,7 @@ class SolderClient
 {
     public $url;
     public $key;
+
     /** @var Client */
     private $client;
 
@@ -32,27 +34,23 @@ class SolderClient
 
     public static function factory($url, $key, $headers = [], $handler = null, $timeout = 3)
     {
-        $client = null;
         $url = self::validateUrl($url);
-        if (! $headers) {
-            $headers = ['User-Agent' => self::setupAgent()];
-        }
-        if (! $handler) {
-            $client = new Client(['base_uri' => $url, 'timeout' => $timeout, 'headers' => $headers]);
-        } else {
-            $client = new Client(['base_uri' => $url, 'timeout' => $timeout, 'headers' => $headers, 'handler' => $handler]);
-        }
+
+        $client = new Client([
+            'base_uri' => $url,
+            'timeout' => $timeout,
+            'headers' => self::prepareHeaders($headers),
+            'handler' => $handler ?: HandlerStack::create(),
+        ]);
 
         if (! self::validateKey($client, $key)) {
             throw new UnauthorizedException('Key failed to validate.', 403);
         }
 
-        $properties = [
+        return new self($client, [
             'url' => $url,
             'key' => $key,
-        ];
-
-        return new self($client, $properties);
+        ]);
     }
 
     protected function __construct($client, $properties)
@@ -63,67 +61,70 @@ class SolderClient
         }
     }
 
-    private function handle($uri)
+    protected static function prepareHeaders($headers)
     {
+        $headers = array_merge([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'User-Agent' => 'SolderClient/'.self::VERSION,
+        ], $headers);
+
+        return $headers;
+    }
+
+    private function handle($endpoint, $params = [])
+    {
+        $uri = $this->buildUri($endpoint, $params);
+
         try {
-            $response = $this->client->get($uri.$this->key);
+            $response = $this->client->get($uri);
         } catch (RequestException $e) {
             throw new ConnectionException('Request to \''.$uri.'\' failed. '.$e->getMessage(), 0, $e);
         }
 
         $status_code = $response->getStatusCode();
-        $reason = $response->getReasonPhrase();
-
         if ($status_code >= 300) {
-            throw new ConnectionException('Request to \''.$uri.'\' failed. '.$reason, $status_code);
+            throw new ConnectionException('Request to \''.$uri.'\' failed. '.$response->getReasonPhrase(), $status_code);
         }
 
-        $body = $response->getBody();
-        $json = json_decode($body, true);
-
-        if ($json === null) {
+        if (null === $json = json_decode($response->getBody(), true)) {
             throw new BadJSONException('Failed to decode JSON for \''.$uri.'\'', 500);
         }
 
         return $json;
     }
 
-    public function getModpacks($recursive = false)
+    public function getModpackNames()
     {
-        if ($recursive) {
-            $uri = 'modpack?include=full&k=';
-        } else {
-            $uri = 'modpack?k=';
-        }
+        $response = $this->handle('modpack');
 
-        $response = $this->handle($uri);
-
-        if (! is_array($response) || ! array_key_exists('modpacks', $response) || ! is_array($response['modpacks'])) {
+        if ($this->arrayMissing($response, 'modpacks')) {
             throw new ResourceException('Got an unexpected response from Solder', 500);
         }
 
-        $modpacks = $response['modpacks'];
-        $result = [];
-
-        if ($recursive) {
-            foreach ($modpacks as $modpack) {
-                if (is_array($modpack)) {
-                    array_push($result, new Modpack($modpack));
-                }
-            }
-        } else {
-            foreach ($modpacks as $slug => $modpack) {
-                $result[$slug] = $modpack;
-            }
-        }
-
-        return $result;
+        return $response['modpacks'];
     }
 
-    public function getModpack($modpack)
+    public function getModpacks($recursive = false)
     {
-        $uri = 'modpack/'.$modpack.'?k=';
-        $response = $this->handle($uri);
+        if (! $recursive) {
+            return $this->getModpackNames();
+        }
+
+        $response = $this->handle('modpack', ['include' => 'full']);
+
+        if ($this->arrayMissing($response, 'modpacks')) {
+            throw new ResourceException('Got an unexpected response from Solder', 500);
+        }
+
+        return collect($response['modpacks'])->map(function ($modpack) {
+            new Modpack($modpack);
+        });
+    }
+
+    public function getModpack($modpackSlug)
+    {
+        $response = $this->handle("modpack/$modpackSlug");
 
         if (array_key_exists('error', $response) || array_key_exists('status', $response)) {
             if ($response['error'] == 'Modpack does not exist' || $response['status'] == '404') {
@@ -138,10 +139,9 @@ class SolderClient
         return new Modpack($response);
     }
 
-    public function getBuild($modpack, $build)
+    public function getBuild($modpackSlug, $buildVersion)
     {
-        $uri = 'modpack/'.$modpack.'/'.$build.'?include=mods&k=';
-        $response = $this->handle($uri);
+        $response = $this->handle("modpack/$modpackSlug/$buildVersion", ['include' => 'mods']);
 
         if (array_key_exists('error', $response) || array_key_exists('status', $response)) {
             if ($response['error'] == 'Build does not exist' || $response['status'] == '404') {
@@ -158,12 +158,10 @@ class SolderClient
 
     public static function validateUrl($url)
     {
+        $url = rtrim($url, '/').'/';
+
         if (! preg_match("/\/api\/?$/", $url)) {
             throw new InvalidURLException('You must include api/ at the end of your URL');
-        }
-
-        if (preg_match("/\/api$/", $url)) {
-            $url = $url.'/';
         }
 
         return $url;
@@ -172,7 +170,7 @@ class SolderClient
     public static function validateKey(Client $client, $key)
     {
         try {
-            $response = $client->get('verify/'.$key);
+            $response = $client->get("verify/$key");
         } catch (RequestException $e) {
             if ($e->hasResponse()) {
                 throw new ConnectionException('Request to verify Solder API failed. Solder API returned HTTP code '.$e->getResponse()->getStatusCode(), 0, $e);
@@ -181,22 +179,39 @@ class SolderClient
             }
         }
 
-        $body = $response->getBody();
-        $json = json_decode($body, true);
+        $json = json_decode($response->getBody(), true);
 
-        if ($json) {
-            if (array_key_exists('valid', $json)) {
-                return true;
-            }
-        } else {
+        if ($json === null) {
             throw new BadJSONException('Failed to decode JSON response when verifying API key');
         }
 
-        return false;
+        return array_key_exists('valid', $json);
     }
 
-    private static function setupAgent()
+    private function buildUri($endpoint, $params)
     {
-        return 'SolderClient/'.self::VERSION;
+        $params = array_merge([
+            'k' => $this->key,
+        ], $params);
+
+        return $endpoint.'?'.http_build_query($params);
+    }
+
+    private function arrayHas($array, $key)
+    {
+        if (! is_array($array)) {
+            return false;
+        }
+
+        if (! array_key_exists($key, $array)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function arrayMissing($array, $key)
+    {
+        return ! $this->arrayHas($array, $key);
     }
 }
