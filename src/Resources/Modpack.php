@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace TechnicPack\SolderClient\Resources;
+namespace TechnicPack\Solder\Resources;
 
 class Modpack
 {

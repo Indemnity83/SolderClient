@@ -9,18 +9,18 @@
  * file that was distributed with this source code.
  */
 
-namespace TechnicPack\SolderClient\Tests;
+namespace Tests;
 
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use GuzzleHttp\Handler\MockHandler;
-use TechnicPack\SolderClient\SolderClient;
-use TechnicPack\SolderClient\Exception\BadJSONException;
-use TechnicPack\SolderClient\Exception\ResourceException;
-use TechnicPack\SolderClient\Exception\ConnectionException;
-use TechnicPack\SolderClient\Exception\InvalidURLException;
-use TechnicPack\SolderClient\Exception\UnauthorizedException;
+use TechnicPack\Solder\SolderClient;
+use TechnicPack\Solder\Exception\BadJSONException;
+use TechnicPack\Solder\Exception\ResourceException;
+use TechnicPack\Solder\Exception\ConnectionException;
+use TechnicPack\Solder\Exception\InvalidURLException;
+use TechnicPack\Solder\Exception\UnauthorizedException;
 
 class ClientTest extends TestCase
 {

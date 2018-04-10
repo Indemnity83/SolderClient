@@ -1,14 +1,15 @@
 {
-  "name": "TechnicPack/SolderClient",
+  "name": "technicpack/solder-sdk-php",
   "type": "library",
-  "description": "PHP Library to communicate with Technic Solder",
-  "homepage": "https://github.com/TechnicPack/SolderClient",
+  "description": "PHP SDK Library to communicate with Solder",
+  "homepage": "https://github.com/technicpack/solderclient",
   "license": "MIT",
-  "authors": [{
-    "name": "Ryan Cohen",
-    "email": "sct@technicpack.net",
-    "homepage": "http://www.technicpack.net",
-    "role": "Developer"
+  "authors": [
+    {
+      "name": "Ryan Cohen",
+      "email": "sct@technicpack.net",
+      "homepage": "http://www.technicpack.net",
+      "role": "Developer"
     },
     {
       "name": "Dylan Page",
@@ -21,24 +22,28 @@
       "email": "pyker@technicpack.net",
       "homepage": "http://www.technicpack.net",
       "role": "Developer"
-    }],
+    },
+    {
+      "name": "Kyle Klaus",
+      "email": "kklaus@indemnity83.com",
+      "homepage": "http://www.technicpack.net",
+      "role": "Developer"
+    }
+  ],
   "require": {
-    "php": ">=5.5.0",
     "guzzlehttp/guzzle": "~6.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "~5.7"
+    "phpunit/phpunit": "~7.0"
   },
   "autoload": {
-      "psr-4": {
-          "TechnicPack\\SolderClient\\": "src/"
-      }
+    "psr-4": {
+      "TechnicPack\\Solder\\": "src/"
+    }
   },
   "autoload-dev": {
-    "classmap": [
-      "tests/"
-    ]
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  }
 }

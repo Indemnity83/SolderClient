@@ -9,17 +9,17 @@
  * file that was distributed with this source code.
  */
 
-namespace TechnicPack\SolderClient;
+namespace TechnicPack\Solder;
 
 use GuzzleHttp\Client;
+use TechnicPack\Solder\Resources\Build;
+use TechnicPack\Solder\Resources\Modpack;
 use GuzzleHttp\Exception\RequestException;
-use TechnicPack\SolderClient\Resources\Build;
-use TechnicPack\SolderClient\Resources\Modpack;
-use TechnicPack\SolderClient\Exception\BadJSONException;
-use TechnicPack\SolderClient\Exception\ResourceException;
-use TechnicPack\SolderClient\Exception\ConnectionException;
-use TechnicPack\SolderClient\Exception\InvalidURLException;
-use TechnicPack\SolderClient\Exception\UnauthorizedException;
+use TechnicPack\Solder\Exception\BadJSONException;
+use TechnicPack\Solder\Exception\ResourceException;
+use TechnicPack\Solder\Exception\ConnectionException;
+use TechnicPack\Solder\Exception\InvalidURLException;
+use TechnicPack\Solder\Exception\UnauthorizedException;
 
 class SolderClient
 {

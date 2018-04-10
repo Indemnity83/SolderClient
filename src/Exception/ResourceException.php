@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace TechnicPack\SolderClient\Exception;
+namespace TechnicPack\Solder\Exception;
 
 class ResourceException extends \Exception implements SolderClientException
 {
