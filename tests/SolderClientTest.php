@@ -1,22 +1,29 @@
 <?php
 
+/*
+ * This file is part of TechnicPack Solder.
+ *
+ * (c) Syndicate LLC
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace TechnicPack\SolderClient\Tests;
 
-use TechnicPack\SolderClient\Exception\BadJSONException;
-use TechnicPack\SolderClient\Exception\ConnectionException;
-use TechnicPack\SolderClient\Exception\InvalidURLException;
-use TechnicPack\SolderClient\Exception\ResourceException;
-use TechnicPack\SolderClient\Exception\UnauthorizedException;
-use TechnicPack\SolderClient\SolderClient;
-
-use PHPUnit\Framework\TestCase;
-use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\TestCase;
+use GuzzleHttp\Handler\MockHandler;
+use TechnicPack\SolderClient\SolderClient;
+use TechnicPack\SolderClient\Exception\BadJSONException;
+use TechnicPack\SolderClient\Exception\ResourceException;
+use TechnicPack\SolderClient\Exception\ConnectionException;
+use TechnicPack\SolderClient\Exception\InvalidURLException;
+use TechnicPack\SolderClient\Exception\UnauthorizedException;
 
 class ClientTest extends TestCase
 {
-
     public function testAPIValidation()
     {
         $this->expectException(InvalidURLException::class);
@@ -25,7 +32,6 @@ class ClientTest extends TestCase
 
     public function testInvalidKey()
     {
-
         $mock = new MockHandler([
             new Response(200, ['Content-Length' => 0], '{"error": "Key does not exist"}'),
         ]);
@@ -38,7 +44,6 @@ class ClientTest extends TestCase
 
     public function testInternalServerError()
     {
-
         $mock = new MockHandler([
             new Response(503, ['Content-Length' => 0], ''),
         ]);
